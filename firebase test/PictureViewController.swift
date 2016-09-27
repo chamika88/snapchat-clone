@@ -7,29 +7,76 @@
 //
 
 import UIKit
+import Firebase
 
-class PictureViewController: UIViewController {
+class PictureViewController: UIViewController, UIImagePickerControllerDelegate,UINavigationControllerDelegate {
+    
+    @IBOutlet weak var imageview: UIImageView!
+    
+    @IBOutlet weak var descTextField: UITextField!
 
+    @IBOutlet weak var nextButton: UIButton!
+    
+    var imagePicker = UIImagePickerController()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
-    }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+        
+        imagePicker.delegate = self
+       
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        
+        let image = info[UIImagePickerControllerOriginalImage] as! UIImage
+        
+        imageview.image = image
+        
+        imageview.backgroundColor = UIColor.clear
+        
+        imagePicker.dismiss(animated: true, completion: nil)
     }
-    */
 
+
+    @IBAction func nextBtnTapped(_ sender: AnyObject) {
+        
+        nextButton.isEnabled = false
+        
+        let imageFolder = FIRStorage.storage().reference().child("images")
+        
+        let imageData = UIImageJPEGRepresentation(imageview.image!, 0.1)!
+        
+        
+        
+        
+        imageFolder.child("\(NSUUID().uuidString).jpg").put(imageData, metadata: nil) { (metadata, error) in
+            print("we tried to upload")
+            if error != nil {
+                print("error occured\(error)")
+            } else {
+                print(metadata?.downloadURL())
+                
+                self.performSegue(withIdentifier: "selectUsersegue", sender: metadata?.downloadURL()!.absoluteString)
+            }
+        }
+
+        
+    }
+    
+    @IBAction func cameraTapped(_ sender: AnyObject) {
+        
+        imagePicker.sourceType = .savedPhotosAlbum
+        imagePicker.allowsEditing = false
+        
+        present(imagePicker, animated: true, completion: nil)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        let nextVC = segue.destination as! SelectUserViewController
+        nextVC.imageURL =  sender as! String
+        nextVC.desc = descTextField.text!
+    }
+
+    
 }
